@@ -1,0 +1,40 @@
+Method for project assembly:
+ - Data acquisition - crawl Flickr - easy
+ 	- download all images
+ - Image preprocessing - easy
+ 	- find average color for all images
+ 	- find associated keywords
+ 	- store in database with filename, color, keywords
+ - Search algorithm - not too bad
+ 	- KNN cluster images based on keywords
+ 	- perform boolean search for specific pictures, then use pictures from the same cluster(s)
+ 	- search cluster for average color requested
+ 	- return filename
+ - Mosaic construction - hardest part
+ 	- select desired image
+ 	- select random pictures or specific (can do random to start with until search algorithm is complete)
+ 	- select resolution (how many mosaic squares by how many mosaic squares?)
+ 	- select final size (so we know how big each mosaic square will be)
+ 	- break down image
+ 		- find average color for each square
+ 		- search for pictures matching color and keyword requirements
+ 	- stitch all images together to make mosaic
+ 
+Questions
+ - How to handle images of different shapes? Take square in the middle?
+ - Python for search algorithm, C++ for image processing and stitching? Should not be too hard.
+ - How to store huge amount of data? LOTS of pictures?
+ - How much leeway for average color? +/- 5 points for all colors? May not be enough. Must fine-tune with acquired data.
+
+
+How to break up work?
+ - Kate has experience with libjpeg and can do image analysis unless someone else prefers it.
+ - Search algorithm itself may be fairly simple. Don't know that for a fact.
+
+In database:
+	filename
+	avg red
+	avg blue
+	avg green
+	keywords
+{'filename':'pics/img.jpeg', 'color':{'red':255, 'blue':255, 'green':255}, 'keywords':['cat', 'cute', 'fuzzy']}
