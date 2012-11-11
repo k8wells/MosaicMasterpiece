@@ -9,6 +9,7 @@
 #include <string.h>
 #include <math.h>
 #include <map>
+#include <ctype.h>
 
 #define SUCCESS			0
 #define FILE_NOT_FOUND	-1
@@ -29,23 +30,23 @@ public:
 	int G() { return green; }
 };
 
-class ColorMatrix {
-	
-};
-
 typedef pair<int, int> coordinates;
 
 class ImageAnalyzer {
 	int width, height, components;
-	vector<vector<int> > pixels;
 	int redsum, bluesum, greensum;
 	map<char*, ImageColor> imageHash;
+	unsigned char **pixels;
+	char *readFile, writeFile[18];
+
 	
 public:
 	int Height() { return height; }
 	int Width() { return width; }
 	int Components() { return components; }
+	char* GetID(char _filename[]);
 	int ReadImage(char _filename[]);
+	int CropAndResize(char ID[]);
 	ImageColor FindAvg();
 	void ProcessImg(char _filename[]);
 	void ProcessChunk(coordinates _topLeft, coordinates _bottomRight);
