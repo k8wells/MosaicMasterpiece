@@ -10,6 +10,7 @@
 #include <math.h>
 #include <map>
 #include <ctype.h>
+#include <string>
 
 #define SUCCESS			0
 #define FILE_NOT_FOUND	-1
@@ -28,6 +29,7 @@ public:
 	int R() { return red; }
 	int B() { return blue; }
 	int G() { return green; }
+	void Print();
 };
 
 typedef pair<int, int> coordinates;
@@ -35,20 +37,21 @@ typedef pair<int, int> coordinates;
 class ImageAnalyzer {
 	int width, height, components;
 	int redsum, bluesum, greensum;
-	map<char*, ImageColor> imageHash;
+
 	unsigned char **pixels;
 	char *readFile, writeFile[18];
 
 	
 public:
+	map<string, ImageColor> imageHash;
 	int Height() { return height; }
 	int Width() { return width; }
 	int Components() { return components; }
-	char* GetID(char _filename[]);
-	int ReadImage(char _filename[]);
-	int CropAndResize(char ID[]);
+	string GetID(string _filename);
+	int ReadImage(string _filename);
+	int CropAndResize(string ID);
 	ImageColor FindAvg();
-	void ProcessImg(char _filename[]);
+	string ProcessImg(string _filename);
 	void ProcessChunk(coordinates _topLeft, coordinates _bottomRight);
 
 };

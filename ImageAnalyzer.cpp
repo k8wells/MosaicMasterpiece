@@ -1,5 +1,7 @@
 #include "ImageAnalyzer.h"
 
+using namespace std;
+
 ImageColor::ImageColor() {
 	red = 0;
 	blue = 0;
@@ -18,28 +20,31 @@ void ImageColor::SetColors(int _red, int _blue, int _green) {
 	green = _green;
 }
 
+void ImageColor::Print() {
+	printf("R %03i\tG %03i\tB %03i\n", red, green, blue);
+}
 
 /////////////////////////////////////////////////////////////////////
 
-char* ImageAnalyzer::GetID(char _filename[])
+string ImageAnalyzer::GetID(string _filename)
 {
 	char idStr[10];
 	int i = 0;
 	while(true)
 	{
-		if (_filename[i + 9] == '_')
+		if (_filename.c_str()[i + 9] == '_')
 			break;
-		if (isdigit(_filename[i + 9]))
-			idStr[i] = _filename[i + 9];
+		if (isdigit(_filename.c_str()[i + 9]))
+			idStr[i] = _filename.c_str()[i + 9];
 		i++;
 	}
 	return idStr;
 }
 
-int ImageAnalyzer::ReadImage(char _filename[]) {
+int ImageAnalyzer::ReadImage(string _filename) {
 	struct jpeg_decompress_struct cinfo;
 	struct jpeg_error_mgr jerr;
-	readFile = _filename;	
+	readFile = _filename.c_str();	
 	//pixels.clear();
 	
 	printf("OPENING IMAGE %s\n", readFile);
@@ -63,8 +68,8 @@ int ImageAnalyzer::ReadImage(char _filename[]) {
 	height = cinfo.image_height;
 	components = cinfo.num_components;
 	
-	printf("IMAGE INFO OBTAINED FOR %s\n", readFile);
-	printf("W %i\tH %i\tC %i\n", width, height, components);
+	/*printf("IMAGE INFO OBTAINED FOR %s\n", readFile);
+	printf("W %i\tH %i\tC %i\n", width, height, components);*/
 	
 	// start reading image	
 	JSAMPROW row_pointer[1];
@@ -100,7 +105,7 @@ int ImageAnalyzer::ReadImage(char _filename[]) {
 	jpeg_destroy_decompress(&cinfo);
 	fclose(image);
 	free(row_pointer[0]);
-	return 0;
+	return SUCCESS;
 
 }
 
@@ -125,24 +130,16 @@ ImageColor ImageAnalyzer::FindAvg() {
 	return color;
 }
 
-int ImageAnalyzer::CropAndResize(char ID[]) {
+int ImageAnalyzer::CropAndResize(string ID) {
 	// set up to write new image
-	
-	for (int y = 0; y < height; y++)
-	{
-		for (int x = 0; x < width * 3; x++)
-		{
-			printf("%03i ", pixels[y][x]);
-		}
-		printf("\n");
-	}
+	unsigned char finalbuf[100][300]; 
 	
 	puts("STARTING CROP AND RESIZE");
 	struct jpeg_compress_struct cinfo;
 	struct jpeg_error_mgr jerr;
 	FILE *out;
-	sprintf(writeFile, "cr_%s.jpeg", ID);
-	printf("%s\n", writeFile);
+	sprintf(writeFile, "pictures/processed/%s.jpg", ID.c_str());
+	//printf("CROPPING PICTURE %s\n", writeFile);
 	JSAMPROW row_pointer[1];
 	int row_stride;
 	cinfo.err = jpeg_std_error(&jerr);
@@ -155,101 +152,176 @@ int ImageAnalyzer::CropAndResize(char ID[]) {
 	jpeg_stdio_dest(&cinfo, out);
 	cinfo.input_components = 3;
 	cinfo.in_color_space = JCS_RGB;
+	cinfo.image_width = cinfo.image_height = 100;
 	jpeg_set_quality(&cinfo, 10, TRUE);
 	jpeg_set_defaults(&cinfo);
-	int cropOff = 0;
+	int cropOff = 0, lilCrop = 0;
+	int newsize = 0;
 	
-	unsigned char **imgbuf;
-	
+	unsigned char **cropbuf;
+	//puts("CROPPING IMAGE");
 	if (width == height)
 	{
-		puts("Image does not need to be cropped.");
-		imgbuf = pixels;
+
+		//puts("Image is square.");
+		newsize = (height / 100) * 100;
+		lilCrop = (height % 100) / 2;
+		jpeg_start_compress(&cinfo, TRUE);
+		cropbuf = new unsigned char*[newsize];
+		for (int i = 0; i < newsize; i++)
+		{
+			cropbuf[i] = new unsigned char[newsize * 3];
+		}
+		//printf("newsize = %i lilCrop = %i\n", newsize, lilCrop);
+		int xx, yy = 0;
+		for (int y = lilCrop; y < lilCrop + newsize; y++)
+		{
+			xx = 0;
+			for (int x = lilCrop * 3; x < (lilCrop + newsize) * 3; x++)
+			{
+				//printf("y %i x %i yy %i xx %i\n", y, x, yy, xx);
+				cropbuf[yy][xx] = pixels[y][x];
+				xx++;
+			}
+			yy++;
+		}
 	}
 
 	// need to crop sides off
 	else if (width > height)
 	{
-		cinfo.image_width = cinfo.image_height = height;
-		row_stride = height;
-		imgbuf = new unsigned char*[height];
+		newsize = (height / 100) * 100;
+		lilCrop = (height % 100) / 2;
+		row_stride = newsize;
+		cropbuf = new unsigned char*[newsize];
 		jpeg_start_compress(&cinfo, TRUE);
 		
-		cropOff = (width - height) / 2;
-		printf("Cropping off %i pixels on each side\n", cropOff);
+		cropOff = (width - newsize) / 2;
+		//puts("Cropping off sides.");
 		
-		for (int i = 0; i < height; i++)
+		for (int i = 0; i < newsize; i++)
 		{
-			imgbuf[i] = new unsigned char[height * 3];
+			cropbuf[i] = new unsigned char[newsize * 3];
 		}
-		
-		int xx;
-		for (int y = 0; y < height; y++)
+		int xx, yy = 0;
+		for (int y = lilCrop; y < lilCrop + newsize; y++)
 		{
 			xx = 0;
-			for (int x = cropOff * 3; x < (cropOff + height) * 3; x++)
+			for (int x = cropOff * 3; x < (cropOff + newsize) * 3; x++)
 			{
-				imgbuf[y][xx] = pixels[y][x];
+				cropbuf[yy][xx] = pixels[y][x];
 				xx++;
 			}
+			yy++;
 		}
 	}
 	
 	// crop top and bottom
 	else if (height > width)
 	{
-		cinfo.image_width = cinfo.image_height = width;
-		row_stride = width;
-		imgbuf = new unsigned char*[width];
+		newsize = (width / 100) * 100;
+		lilCrop = (width % 100) / 2;
+		row_stride = newsize;
+		cropbuf = new unsigned char*[newsize];
 		jpeg_start_compress(&cinfo, TRUE);
 		
-		cropOff = (height - width) / 2;
-		printf("Cropping off %i pixels on each side\n", cropOff);
+		cropOff = (width - newsize) / 2;
+		//puts("Cropping off top and bottom.");
 		
-		for (int i = 0; i < width; i++)
+		for (int i = 0; i < newsize; i++)
 		{
-			imgbuf[i] = new unsigned char[width * 3];
+			cropbuf[i] = new unsigned char[newsize * 3];
 		}
-		
-		int yy = 0;
-		for (int y = cropOff; y < cropOff + width; y++)
+		int xx, yy = 0;
+		for (int y = cropOff; y < cropOff + newsize; y++)
 		{
-			for (int x = 0; x < width * 3; x++)
+			xx = 0;
+			for (int x = lilCrop * 3; x < (lilCrop + newsize) * 3; x++)
 			{
-				imgbuf[yy][x] = pixels[y][x];
+				cropbuf[yy][xx] = pixels[y][x];
+				xx++;
 			}
 			yy++;
 		}
 	}
+	//puts("IMAGE CROPPED");
 	
+// ----------------------------------//
+
+	//puts("RESIZING IMAGE");
+	int resampleGrid = newsize / 100;
+	int xBlock = 0, yBlock = 0;
+	int r, g, b;
+	int x = 0, y = 0, xx = 0, yy = 0;
+	
+	for (int y = 0; y < newsize; y += resampleGrid)
+	{
+		for (int x = 0; x < newsize * 3; x += resampleGrid * 3)
+		{
+			// looping through resamplegrid
+			r = 0, g = 0, b = 0;
+			for (int ry = 0; ry < resampleGrid; ry++)
+			{
+				for (int rx = 0; rx < resampleGrid * 3; rx += 3)
+				{
+					r += cropbuf[y + ry][x + rx];
+					g += cropbuf[y+ ry][x + rx + 1];
+					b += cropbuf[y + ry][x + rx + 2];
+				}
+			}
+			r /= resampleGrid * resampleGrid;
+			g /= resampleGrid * resampleGrid;
+			b /= resampleGrid * resampleGrid;
+			//printf("yy %i xx %i\n", yy, xx);
+			finalbuf[yy][xx] = r;
+			finalbuf[yy][xx + 1] = g;
+			finalbuf[yy][xx + 2] = b;
+			
+			if (xx == 297)
+			{
+				yy++;
+				xx = 0;
+			}
+			else
+				xx += 3;
+		}
+	}
+	//puts("IMAGE RESIZED");
+	
+// ----------------------------------//
+	
+	//puts("SAVING NEW IMAGE");
 	while (cinfo.next_scanline < cinfo.image_height)
 	{
-		row_pointer[0] = imgbuf[cinfo.next_scanline];
-		for (int i = 0; i < height * 3; i++)
-		{
-			printf("%03i ", imgbuf[cinfo.next_scanline][i]);
-		}
-		printf("\n");
+		row_pointer[0] = finalbuf[cinfo.next_scanline];
 		(void) jpeg_write_scanlines(&cinfo, row_pointer, 1);
+		//printf("scanline %i written\n", cinfo.next_scanline);	
 	}
 	jpeg_finish_compress(&cinfo);
 	fclose(out);
 	jpeg_destroy_compress(&cinfo);
-
-	puts("IMAGE CROPPED");
-	
+	printf("NEW IMAGE SAVED: %s\n", writeFile);
 }
 
-void ImageAnalyzer::ProcessImg(char _readName[])
+string ImageAnalyzer::ProcessImg(string _readName)
 {
-	ReadImage(_readName);
-	//CropAndResize(0);
-	char *id = GetID(_readName);
-	CropAndResize(id);
-	//ImageColor avgColor = FindAvg();
-	//imageHash[readFile] = avgColor;
 	
-	//printf("IMAGE %s READ:\tAVG R %i\tAVG B %i\tAVG G %i\t\n", readFile, imageHash[readFile].R(), imageHash[readFile].B(), imageHash[readFile].G());
+	if (ReadImage(_readName) != SUCCESS)
+		puts("READIMAGE FAIL");
+	//CropAndResize(0);
+	string id = GetID(_readName);
+	CropAndResize(id);
+	ImageColor avgColor = FindAvg();
+	
+	char toWrite[255];
+	sprintf(toWrite, "{\"id\":\"%s\",\"color\":[%i, %i, %i]}", id.c_str(), avgColor.R(), avgColor.G(), avgColor.B());
+	printf("%s\n", toWrite);
+	return toWrite;
+	
+	//imageHash[id] = avgColor;
+	
+	
+	//printf("IMAGE %s READ:\tAVG R %i\tAVG B %i\tAVG G %i\t\n\n", readFile, avgColor.R(), avgColor.B(), avgColor.G());
 }
 
 void ImageAnalyzer::ProcessChunk(coordinates _topLeft, coordinates _bottomRight) {
@@ -257,10 +329,14 @@ void ImageAnalyzer::ProcessChunk(coordinates _topLeft, coordinates _bottomRight)
 }
 
 
-int main() {
+/*int main() {
 	
 	ImageAnalyzer I;
 	//I.ProcessImg("images/sidecrop.jpeg");
 	I.ProcessImg("pictures/8164531074_b2c4307ebc_z.jpg");
-	//I.ProcessImg("pictures/8164039972_0f8d7eda6c_z.jpg");
-}
+	printf("\n");
+	I.ProcessImg("pictures/8164039972_0f8d7eda6c_z.jpg");
+	printf("\n");
+	I.imageHash["8164531074"].Print();
+	I.imageHash["8164039972"].Print();
+}*/
