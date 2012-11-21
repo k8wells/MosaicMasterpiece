@@ -5,30 +5,30 @@ Minute Mosaic Masterpiece - make a photomosaic using Flickr images!
 DEPENDENCIES
 ================
 All instructions for installing on Linux systems; apologies to Windows users.
-Python 2.7
+*Python 2.7*
 
-Pip
+*Pip:*
 sudo apt-get install pip
 
-libjpeg
+*libjpeg:*
 sudo apt-get install libjpeg8 libjpeg8-dev
 
-pygame
+*pygame:*
 sudo apt-get install python-pygame
 
-ujson
+*ujson:*
 sudo pip install ujson
 
-flickrapi
+*flickrapi:*
 sudo pip install flickrapi
 
-elementtree
+*elementtree:*
 sudo pip install elementtree
 
-numpy
+*numpy:*
 sudo pip install numpy
 
-stemming
+*stemming:*
 sudo pip install stemming
 
 HOW TO RUN
@@ -36,7 +36,8 @@ HOW TO RUN
 KHITTYKRAWLER.PY
 ----------------
 For crawling Flickr to obtain pictures. Must replace APIKEY and APISECRET with your own key and secret.
-RUN:
+
+*RUN:*
 python khittykrawler.py
 
 This will take a long time and lots of storage space.
@@ -44,7 +45,12 @@ This will take a long time and lots of storage space.
 IMAGE PROCESSING
 ----------------
 Requires files BatchProcess.cpp, ImageAnalysis.cpp, ImageAnalysis.h
-COMPILE: g++ -o batch BatchProcess.cpp ImageAnalysis.cpp -ljpeg -fpermissive
+
+*COMPILE:* 
+g++ -o batch BatchProcess.cpp ImageAnalysis.cpp -ljpeg -fpermissive
+
+*RUN:*
+./batch
 
 Pictures to analyze should be in ./pictures; output will be placed in ./pictures/processed. You must create processed before running ./batch.
 
@@ -55,7 +61,8 @@ SCORING.PY
 Demonstrates the algorithm for determining the closest color to query color
 
 You must have pygame installed to view this demo
-RUN:
+
+*RUN:*
 python scoring.py colordata.json
 
 You will see a textbox looking graphic along with rows of circles of colors given in the data.
@@ -83,7 +90,7 @@ cluster3.py
 cluster_tests.py
 datasample.json
 
-RUN:
+*RUN:*
 nosetests.py -s
 
 This test file consists of 5 different tests.
