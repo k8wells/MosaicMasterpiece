@@ -1,8 +1,10 @@
+from __future__ import division
 import operator
 import utils
 import re
 from collections import defaultdict
 import pymongo
+from pymongo import connection
 import ujson
 import json
 import fileinput
@@ -50,7 +52,7 @@ def main():
     imgdata = read_data()
     img_dict = {}
     img_dict = datadict(imgdata)
-    db = utils.connect_db('mosaic', remove_existing = True)
+   
     delete_ids = []
     for id in color_dict:
         if id not in img_dict.keys():
@@ -65,28 +67,29 @@ def main():
         del img_dict[id]
     #the following code is a list of dict (like the json file)
     #{'color':[#,#,#], 'keywords': {keywords:[], title:[]}, _id:objid, id:#},
-    """
     data = []
     for id in img_dict:
-        dict = {'id': id, 'color':color_dict[id], 'keywords':img_dict[id]}
+        dict = {'filename': id, 'color':color_dict[id], 'keywords':img_dict[id]}
         data.append(dict)
-    merge = db.merge
-    merge.insert(data)
-    for item in merge.find():
-        print item
-    """
+    
     # the following code is a list of dics by id like
     # {id : {'color':[#,#,#], 'keywords': {keywords:[], title:[]}},
+    """
     data = {}
     for id in img_dict:
         data[id] = {}
         data[id]['color'] = color_dict[id]
         data[id]['keywords'] = img_dict[id]
-    merge = db.merge
-    merge.insert(data)
-    #print merge.find_one({'filename':'4'})
-    for item in merge.find():
+    """
+
+    mongo = pymongo.Connection('localhost', 27017)
+    mongo_db = mongo['my_database']
+    mongo_collection = mongo_db['merged_info']
+    mongo_collection.remove({})
+    mongo_collection.insert(data)
+    for item in mongo_collection.find():
         print item
+        
     
 if __name__=="__main__":
     main()
