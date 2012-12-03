@@ -1,0 +1,320 @@
+#include "ImageAnalyzer.h"
+
+using namespace std;
+
+ImageColor::ImageColor() {
+	red = 0;
+	blue = 0;
+	green = 0;
+}
+
+ImageColor::ImageColor(int _red, int _blue, int _green) {
+	red = _red;
+	blue = _blue;
+	green = _green;
+}
+
+void ImageColor::SetColors(int _red, int _blue, int _green) {
+	red = _red;
+	blue = _blue;
+	green = _green;
+}
+
+void ImageColor::Print() {
+	printf("R %03i\tG %03i\tB %03i\n", red, green, blue);
+}
+
+/////////////////////////////////////////////////////////////////////
+
+string ImageAnalyzer::GetID(string _filename)
+{
+	char idStr[10];
+	int i = 0;
+	while(true)
+	{
+		if (_filename.c_str()[i + 9] == '_')
+			break;
+		if (isdigit(_filename.c_str()[i + 9]))
+			idStr[i] = _filename.c_str()[i + 9];
+		i++;
+	}
+	return idStr;
+}
+
+int ImageAnalyzer::ReadImage(string _filename) {
+	struct jpeg_decompress_struct cinfo;
+	struct jpeg_error_mgr jerr;
+	readFile = _filename.c_str();	
+	//pixels.clear();
+	
+	printf("OPENING IMAGE %s\n", readFile);
+	FILE *image = fopen(readFile, "rb");
+	
+	if (!image)
+	{
+		printf("ERROR OPENING IMAGE %s\n", readFile);
+		return FILE_NOT_FOUND;
+	}
+	
+	// error handler
+	cinfo.err = jpeg_std_error(&jerr);
+	// decompression, read JPEG header
+	jpeg_create_decompress(&cinfo);
+	jpeg_stdio_src(&cinfo, image);
+	// get image info
+	jpeg_read_header(&cinfo, true);
+	
+	width = cinfo.image_width;
+	height = cinfo.image_height;
+	components = cinfo.num_components;
+	
+	/*printf("IMAGE INFO OBTAINED FOR %s\n", readFile);
+	printf("W %i\tH %i\tC %i\n", width, height, components);*/
+	
+	// start reading image	
+	JSAMPROW row_pointer[1];
+	pixels = new unsigned char*[height];
+	for (int i = 0; i < height; i++)
+	{
+		pixels[i] = new unsigned char[width * 3];
+	}
+	
+	// decompress
+	jpeg_start_decompress(&cinfo);
+	// allocate memory
+	row_pointer[0] = (JSAMPLE*)malloc(width * components);
+	
+	int y = 0, temp = 0;
+	while(cinfo.output_scanline < height)
+	{
+		jpeg_read_scanlines(&cinfo, row_pointer, 1);
+		for (int x = 0; x < width * components; x++)
+		{
+			pixels[y][x] = row_pointer[0][x];
+		}
+		y++;
+	}
+	
+	for (int i = 0; i < width * components; i++)
+	{
+		row_pointer[0][i] = 0;
+	}
+	
+	// finish decompression, fee memory
+	jpeg_finish_decompress(&cinfo);
+	jpeg_destroy_decompress(&cinfo);
+	fclose(image);
+	free(row_pointer[0]);
+	return SUCCESS;
+}
+
+ImageColor ImageAnalyzer::FindAvg() {
+	/*if ((int readresult = ReadImage(_readName)) != 0)
+		puts("ERROR READING IMAGE %i\n", readresult);*/
+	int R = 0, G = 0, B = 0;
+	for (int y = 0; y < height; y++)
+	{
+		for (int x = 0; x < width; x++)
+		{
+			R += pixels[y][x * components];
+			G += pixels[y][x * components + 1];
+			B += pixels[y][x * components + 2];
+			//printf("(%i, %i)\tR %i\tG %i\tB %i\n", x, y, R, G, B);
+		}
+	}
+	R /= height * width;
+	G /= height * width;
+	B /= height * width;
+	ImageColor color = ImageColor(R, G, B);
+	return color;
+}
+
+int ImageAnalyzer::CropAndResize(string ID) {
+	// set up to write new image
+	unsigned char finalbuf[100][300]; 
+	
+	puts("STARTING CROP AND RESIZE");
+	struct jpeg_compress_struct cinfo;
+	struct jpeg_error_mgr jerr;
+	FILE *out;
+	sprintf(writeFile, "pictures/processed/%s.jpg", ID.c_str());
+	//printf("CROPPING PICTURE %s\n", writeFile);
+	JSAMPROW row_pointer[1];
+	int row_stride;
+	cinfo.err = jpeg_std_error(&jerr);
+	jpeg_create_compress(&cinfo);
+	if ((out = fopen(writeFile, "wb")) == NULL)
+	{
+		printf("ERROR OPENING FILE TO WRITE %s\n", writeFile);
+		return -1;
+	}
+	jpeg_stdio_dest(&cinfo, out);
+	cinfo.input_components = 3;
+	cinfo.in_color_space = JCS_RGB;
+	cinfo.image_width = cinfo.image_height = 100;
+	jpeg_set_quality(&cinfo, 10, TRUE);
+	jpeg_set_defaults(&cinfo);
+	int cropOff = 0, lilCrop = 0;
+	int newsize = 0;
+	
+	unsigned char **cropbuf;
+	//puts("CROPPING IMAGE");
+	if (width == height)
+	{
+
+		//puts("Image is square.");
+		newsize = (height / 100) * 100;
+		lilCrop = (height % 100) / 2;
+		jpeg_start_compress(&cinfo, TRUE);
+		cropbuf = new unsigned char*[newsize];
+		for (int i = 0; i < newsize; i++)
+		{
+			cropbuf[i] = new unsigned char[newsize * 3];
+		}
+		//printf("newsize = %i lilCrop = %i\n", newsize, lilCrop);
+		int xx, yy = 0;
+		for (int y = lilCrop; y < lilCrop + newsize; y++)
+		{
+			xx = 0;
+			for (int x = lilCrop * 3; x < (lilCrop + newsize) * 3; x++)
+			{
+				//printf("y %i x %i yy %i xx %i\n", y, x, yy, xx);
+				cropbuf[yy][xx] = pixels[y][x];
+				xx++;
+			}
+			yy++;
+		}
+	}
+
+	// need to crop sides off
+	else if (width > height)
+	{
+		newsize = (height / 100) * 100;
+		lilCrop = (height % 100) / 2;
+		row_stride = newsize;
+		cropbuf = new unsigned char*[newsize];
+		jpeg_start_compress(&cinfo, TRUE);
+		
+		cropOff = (width - newsize) / 2;
+		//puts("Cropping off sides.");
+		
+		for (int i = 0; i < newsize; i++)
+		{
+			cropbuf[i] = new unsigned char[newsize * 3];
+		}
+		int xx, yy = 0;
+		for (int y = lilCrop; y < lilCrop + newsize; y++)
+		{
+			xx = 0;
+			for (int x = cropOff * 3; x < (cropOff + newsize) * 3; x++)
+			{
+				cropbuf[yy][xx] = pixels[y][x];
+				xx++;
+			}
+			yy++;
+		}
+	}
+	
+	// crop top and bottom
+	else if (height > width)
+	{
+		newsize = (width / 100) * 100;
+		lilCrop = (width % 100) / 2;
+		row_stride = newsize;
+		cropbuf = new unsigned char*[newsize];
+		jpeg_start_compress(&cinfo, TRUE);
+		
+		cropOff = (width - newsize) / 2;
+		//puts("Cropping off top and bottom.");
+		
+		for (int i = 0; i < newsize; i++)
+		{
+			cropbuf[i] = new unsigned char[newsize * 3];
+		}
+		int xx, yy = 0;
+		for (int y = cropOff; y < cropOff + newsize; y++)
+		{
+			xx = 0;
+			for (int x = lilCrop * 3; x < (lilCrop + newsize) * 3; x++)
+			{
+				cropbuf[yy][xx] = pixels[y][x];
+				xx++;
+			}
+			yy++;
+		}
+	}
+	//puts("IMAGE CROPPED");
+	
+// ----------------------------------//
+
+	//puts("RESIZING IMAGE");
+	int resampleGrid = newsize / 100;
+	//int xBlock = 0, yBlock = 0;
+	int r, g, b;
+	int x = 0, y = 0, xx = 0, yy = 0;
+	
+	for (int y = 0; y < newsize; y += resampleGrid)
+	{
+		for (int x = 0; x < newsize * 3; x += resampleGrid * 3)
+		{
+			// looping through resamplegrid
+			r = 0, g = 0, b = 0;
+			for (int ry = 0; ry < resampleGrid; ry++)
+			{
+				for (int rx = 0; rx < resampleGrid * 3; rx += 3)
+				{
+					r += cropbuf[y + ry][x + rx];
+					g += cropbuf[y+ ry][x + rx + 1];
+					b += cropbuf[y + ry][x + rx + 2];
+				}
+			}
+			r /= resampleGrid * resampleGrid;
+			g /= resampleGrid * resampleGrid;
+			b /= resampleGrid * resampleGrid;
+			//printf("yy %i xx %i\n", yy, xx);
+			finalbuf[yy][xx] = r;
+			finalbuf[yy][xx + 1] = g;
+			finalbuf[yy][xx + 2] = b;
+			
+			if (xx == 297)
+			{
+				yy++;
+				xx = 0;
+			}
+			else
+				xx += 3;
+		}
+	}
+	//puts("IMAGE RESIZED");
+	
+// ----------------------------------//
+	
+	//puts("SAVING NEW IMAGE");
+	while (cinfo.next_scanline < cinfo.image_height)
+	{
+		row_pointer[0] = finalbuf[cinfo.next_scanline];
+		(void) jpeg_write_scanlines(&cinfo, row_pointer, 1);
+		//printf("scanline %i written\n", cinfo.next_scanline);	
+	}
+	jpeg_finish_compress(&cinfo);
+	fclose(out);
+	jpeg_destroy_compress(&cinfo);
+	printf("NEW IMAGE SAVED: %s\n", writeFile);
+}
+
+string ImageAnalyzer::ProcessImg(string _readName)
+{
+	
+	if (ReadImage(_readName) != SUCCESS)
+		puts("READIMAGE FAIL");
+	//CropAndResize(0);
+	string id = GetID(_readName);
+	CropAndResize(id);
+	ImageColor avgColor = FindAvg();
+	
+	char toWrite[255];
+	sprintf(toWrite, "{\"id\":\"%s\",\"color\":[%i, %i, %i]}", id.c_str(), avgColor.R(), avgColor.G(), avgColor.B());
+	printf("%s\n", toWrite);
+	return toWrite;
+}
+
