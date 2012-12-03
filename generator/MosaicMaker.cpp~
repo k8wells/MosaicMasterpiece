@@ -41,7 +41,7 @@ int MosaicMaker::OpenPipe() {
 
 int MosaicMaker::WriteTags(string tags) {
 	int bytes = 0;
-	if ((bytes = write(fd, tags.c_str(), sizeof(tags.c_str()))) < 0)
+	if ((bytes = write(fd, tags.c_str(), sizeof(tags.c_str())) < 0)
 	{
 		puts("ERROR WRITING TAGS");
 		return -1;
@@ -56,7 +56,7 @@ int MosaicMaker::WriteColor(ImageColor c) {
 	colorBuf[1] = c.G();
 	colorBuf[2] = c.B();
 	
-	if ((bytes = write(fd, colorBuf, 3 * sizeof(int))) < 0)
+	if ((bytes = write(fd, colorBuf, 3 * sizeof(int)) < 0)
 	{
 		puts("ERROR WRITING COLOR");
 		return -1;

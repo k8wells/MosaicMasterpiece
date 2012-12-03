@@ -11,7 +11,6 @@
 #include <map>
 #include <ctype.h>
 #include <string>
-#include "../ImageColor.h"
 
 #define SUCCESS			0
 #define FILE_NOT_FOUND	-1

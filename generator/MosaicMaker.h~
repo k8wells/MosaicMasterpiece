@@ -41,7 +41,7 @@ class MosaicMaker {
 	int width, height, components;
 	unsigned char **pixels, **mainPic, **newPixels;
 	char *readFile, writeFile[11];
-	int fd;
+	int fp;
 	char *fifo;
 
 public:
