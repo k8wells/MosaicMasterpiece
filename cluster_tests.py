@@ -141,6 +141,30 @@ TEST_CORPUS = [
     }
     ]
 
+"""
+TEST_CORPUS = [
+    {
+         "filename":"1",
+         "tags":"cat house dog",
+    },
+    {
+        "filename":"2",
+        "tags":"house cat ",
+    },
+    {
+        "filename":"3",
+        "tags":"dog",
+    },
+    {
+        "filename":"4",
+        "tags":"football game",
+    },
+    {
+        "filename":"5",
+        "tags":"soccer game",
+    }
+    ]
+"""
 class TestClustering(unittest.TestCase):
     def setUp(self):
         self.cluster = cluster3.Cluster()
@@ -150,7 +174,7 @@ class TestClustering(unittest.TestCase):
         size = self.cluster.find_beginning_size()
         i = 1
         table = self.cluster.set_up_table(i-1)
-        matrix = self.cluster.init_matrix(TEST_CORPUS, i, table)
+        matrix = self.cluster.find_matrix(TEST_CORPUS, i, table)
         pairs = self.cluster.find_closest_pairs(matrix)
         new_matrix = self.cluster.combine_pairs(matrix, pairs, i)
         i = i +1

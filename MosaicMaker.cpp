@@ -1,5 +1,7 @@
 #import "MosaicMaker.h"
 
+/////////////////////////////////////////////////////////////////////
+
 // identical to ImageAnalyzer::ReadImage
 int MosaicMaker::ReadImage(string _filename) {
 	struct jpeg_decompress_struct cinfo;
@@ -69,6 +71,7 @@ int MosaicMaker::ReadImage(string _filename) {
 }
 
 int MosaicMaker::BreakDown(int squareSize) {
+	mainPicture = pixels;
 	int newHeight = height/squareSize * 100;
 	int newWidth = width/squareSize * 100;
 	newPixels = new unsigned char*[newHeight];
@@ -127,9 +130,9 @@ int MosaicMaker::BreakDown(int squareSize) {
 				for (int sx = 0; sx < squareSize * 3; sx += 3)
 				{
 					//printf("y %i x %i sy %i sx %i\n", y, x, sy, sx);
-					r += pixels[y + sy][x + sx];
-					g += pixels[y+ sy][x + sx + 1];
-					b += pixels[y + sy][x + sx + 2];
+					r += mainPic[y + sy][x + sx];
+					g += mainPic[y+ sy][x + sx + 1];
+					b += mainPic[y + sy][x + sx + 2];
 				}
 			}
 			r /= squareSize * squareSize;
@@ -163,6 +166,13 @@ int MosaicMaker::BreakDown(int squareSize) {
 	fclose(out);
 	jpeg_destroy_compress(&cinfo);
 	printf("NEW IMAGE SAVED: %s\n", writeFile);
+}
+
+void MosaicMaker::WriteBlock(char filename[], Block block) {
+	// for when we actually use the images
+	ReadImage(filename);
+	
+
 }
 
 int main() {

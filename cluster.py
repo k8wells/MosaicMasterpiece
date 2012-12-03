@@ -36,10 +36,9 @@ class Cluster(object):
     
     def __init__(self):
         self.pics = {}
-        #self.query = "cats dogs animals"
         self.clusters = {} # cluster id : [pic ids]
         self.matrix_ids = {} # cluster id : pic id
-        self.matrix_ids_inv = {} #pic id: cluster id
+        #self.matrix_ids_inv = {} #pic id: cluster id
         self.clusters_inv = {} # pic id : cluster id
         self.new_pics = {}
 
@@ -69,48 +68,24 @@ class Cluster(object):
             tokens = []
             j = 0
             while j < len(pics):
-                id = id + pics[j]
+                id = id  + pics[j]
                 tokens = tokens + self.pics[pics[j]]['tokens']
                 j = j + 1
-            
-            table.addDocument(id,tokens)
             self.new_pics[id] = tokens
             i = i +1
+        for id in self.new_pics.keys(): 
+            table.addDocument(id,self.new_pics[id])
         return table
 
     def find_matrix(self, matrix, k, table):
         sims = []
         id = 0
         self.matrix_ids={}
-        self.matrix_ids_inv = {}
+        #self.matrix_ids_inv = {}
         for pic in self.new_pics:
             sims = sims + table.similarities(self.new_pics[pic])
             self.matrix_ids[id] = pic
-            self.matrix_ids_inv[pic]= [id]
-            id = id + 1
-        values = []
-        for sim in sims:
-            values.append(sim[1])
-        matrix = np.array(values)
-        size = math.sqrt(len(sims))
-        matrix.resize(size, size)
-        #ignores the similarites to itself
-        x = 0
-        while x < size:
-            y = matrix[x].argmax()
-            matrix[x,y] = 0
-            x = x + 1
-        return matrix
-            
-            
-    def init_matrix(self, pics, k, table):    
-        sims = []
-        id = 0
-        
-        for pic in pics:
-            sims = sims + table.similarities(self.pics[parseID(pic["filename"])]['tokens'])
-            self.matrix_ids[id] = parseID(pic["filename"])
-            self.matrix_ids_inv[parseID(pic["filename"])]= [id]
+            #self.matrix_ids_inv[pic]= [id]
             id = id + 1
         values = []
         for sim in sims:
@@ -143,6 +118,7 @@ class Cluster(object):
         while i < len(matrix[0]):
             if i != x and i != y:
                 id = self.matrix_ids[i] # find pic id that corresponds with certain row
+                print id
                 value = self.clusters_inv['tier'+str(k-1)][id] # find cluster that the pic was previously assigned to
                 self.clusters_inv['tier'+str(k)][id] = value # set pic id : same cluster id (row was not changed)
                 
@@ -158,7 +134,10 @@ class Cluster(object):
                 combine_clusters = clusters1 + clusters2
                 self.clusters['tier'+str(k)][value] = combine_clusters
             i = i + 1
-
+        print 'CLUSTERS'
+        print self.clusters
+        print 'INV_CLUSTER'
+        print self.clusters_inv
 
     def find_beginning_size(self):
         size =  len(self.pics)
@@ -172,7 +151,7 @@ def main():
     i = 1
     table = cluster.set_up_table(i-1)
     pics = utils.read_tweets()
-    matrix = cluster.init_matrix(pics, i, table)
+    matrix = cluster.find_matrix(pics, i, table)
     pairs = cluster.find_closest_pairs(matrix)
     new_matrix = cluster.combine_pairs(matrix, pairs, i)
     i = i +1
