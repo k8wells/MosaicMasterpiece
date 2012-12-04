@@ -87,8 +87,8 @@ def main():
     mongo_collection = mongo_db['merged_info']
     mongo_collection.remove({})
     mongo_collection.insert(data)
-    for item in mongo_collection.find():
-        print item
+    #for item in mongo_collection.find():
+        #print item
         
     
 if __name__=="__main__":

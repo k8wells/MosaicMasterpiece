@@ -153,12 +153,14 @@ def main():
     #pics = utils.read_tweets()
     mongo = pymongo.Connection('localhost', 27017)
     pics = mongo['my_database']['merged_info'].find()
+    #for item in pics:
+        #print item
     cluster = Cluster()
     cluster.index(pics)
     size = cluster.find_beginning_size()
     i = 1
     table = cluster.set_up_table(i-1)
-    pics = utils.read_tweets()
+    #pics = utils.read_tweets()
     matrix = cluster.find_matrix(pics, i, table)
     pairs = cluster.find_closest_pairs(matrix)
     new_matrix = cluster.combine_pairs(matrix, pairs, i)

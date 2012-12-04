@@ -19,13 +19,19 @@ def get_id(tag, dblist):
     data = []
     for item in dblist:
         data.append(item)
+    id = 'NULL'
     for entry in data:
         #print entry
         if tag in entry['keywords']['keywords']:
-            return entry['filename']
+            id = entry['filename']
+            #return entry['filename']
         #else:
             #print 'NNNNNNNNOOOOOOOOOOOOO'
             #return 0
+    if id == 'NULL':
+        k = random.randint(0, len(data)-1)
+        id = data[k]['filename']
+    return id
 
         
 def get_sim(query, stored):
