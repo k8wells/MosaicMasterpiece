@@ -92,11 +92,12 @@ string MosaicMaker::ReadID() {
 	char buf[16];
 	string id;
 	printf("%i\n", fdr);
-	if ((bytes = read(fdr, buf, 16 * sizeof(char))) < 0)
+	read(fdr, buf, 16 * sizeof(char));
+	/*if ((bytes = read(fdr, buf, 16 * sizeof(char))) < 0)
 	{
 		perror("ERROR READING ID");
 		return "0";
-	}
+	}*/
 	printf("%s\n", buf);
 	return buf;
 }
