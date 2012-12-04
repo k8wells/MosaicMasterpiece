@@ -1,6 +1,88 @@
 #import "MosaicMaker.h"
 
+
+Block::Block() {
+	color = ImageColor();
+	x = y = 0;
+}
+
+Block::Block(ImageColor _color, int _x, int _y) {
+	color = _color;
+	x = _x;
+	y = _y;
+}
+
+void Block::Set(ImageColor _color, int _x, int _y) {
+	color = _color;
+	x = _x;
+	y = _y;	
+}
+
 /////////////////////////////////////////////////////////////////////
+
+// ------------ Pipe functions ------------ //
+int MosaicMaker::OpenPipe() {
+	int ret = 0;
+	fifo = "fifo";
+	if ((ret = mkfifo(fifo, S_IRWXO)) != 0)
+	{
+		puts("ERROR CREATING PIPE");
+		return ret;
+	}
+	fd = open(fifo, O_RDWR);
+	if (fd == -1)
+	{
+		puts("ERROR OPENING PIPE");
+		return -1;
+	}
+	puts("Pipe opened.");
+	return 0;
+}
+
+int MosaicMaker::WriteTags(string tags) {
+	int bytes = 0;
+	if ((bytes = write(fd, tags.c_str(), sizeof(tags.c_str()))) < 0)
+	{
+		puts("ERROR WRITING TAGS");
+		return -1;
+	}
+	return 0;
+}
+
+int MosaicMaker::WriteColor(ImageColor c) {
+	int bytes = 0;
+	int colorBuf[3];
+	colorBuf[0] = c.R();
+	colorBuf[1] = c.G();
+	colorBuf[2] = c.B();
+	
+	if ((bytes = write(fd, colorBuf, 3 * sizeof(int))) < 0)
+	{
+		puts("ERROR WRITING COLOR");
+		return -1;
+	}
+	return 0;
+}
+
+string MosaicMaker::ReadID() {
+	int bytes = 0;
+	char buf[10];
+	string id;
+	if ((bytes = read(fd, buf, 10)) < 0)
+	{
+		puts("ERROR READING ID");
+		return NULL;
+	}
+	id = buf;
+	return id;
+}
+
+int MosaicMaker::ClosePipe() {
+	close(fd);
+	unlink(fifo);
+}
+
+// ------------ Image functions ------------ //
 
 // identical to ImageAnalyzer::ReadImage
 int MosaicMaker::ReadImage(string _filename) {
@@ -9,7 +91,7 @@ int MosaicMaker::ReadImage(string _filename) {
 	readFile = _filename.c_str();	
 	//pixels.clear();
 	
-	printf("OPENING IMAGE %s\n", readFile);
+	//printf("Opening image %s\n", readFile);
 	FILE *image = fopen(readFile, "rb");
 	
 	if (!image)
@@ -30,7 +112,7 @@ int MosaicMaker::ReadImage(string _filename) {
 	height = cinfo.image_height;
 	components = cinfo.num_components;
 	
-	printf("IMAGE INFO OBTAINED FOR %s\n", readFile);
+	printf("Image info obtained for %s\n", readFile);
 	printf("W %i\tH %i\tC %i\n", width, height, components);
 	
 	// start reading image	
@@ -71,7 +153,7 @@ int MosaicMaker::ReadImage(string _filename) {
 }
 
 int MosaicMaker::BreakDown(int squareSize) {
-	mainPicture = pixels;
+	mainPic = pixels;
 	int newHeight = height/squareSize * 100;
 	int newWidth = width/squareSize * 100;
 	newPixels = new unsigned char*[newHeight];
@@ -85,17 +167,17 @@ int MosaicMaker::BreakDown(int squareSize) {
 	rightCrop = (width % squareSize) - leftCrop;
 	bottomCrop = (height % squareSize) - topCrop;
 	
-	puts("STARTING BREAKDOWN");
+	puts("Starting breakdown.");
 	struct jpeg_compress_struct cinfo;
 	struct jpeg_error_mgr jerr;
 	FILE *out;
 	sprintf(writeFile, "missrev10.jpg");
-	printf("CROPPING PICTURE %s\n", writeFile);
+	//printf("CROPPING PICTURE %s\n", writeFile);
 	JSAMPROW row_pointer[1];
 	int row_stride;
 	cinfo.err = jpeg_std_error(&jerr);
 	jpeg_create_compress(&cinfo);
-	puts("Opening file");
+	//puts("Opening file");
 	if ((out = fopen(writeFile, "wb")) == NULL)
 	{
 		printf("ERROR OPENING FILE TO WRITE %s\n", writeFile);
@@ -110,6 +192,8 @@ int MosaicMaker::BreakDown(int squareSize) {
 	jpeg_set_defaults(&cinfo);
 	jpeg_start_compress(&cinfo, TRUE);
 	
+	Block block;
+	ImageColor c;
 	int r, g, b;
 	int xBlock = 0, yBlock = 0;
 	int x = 0, y = 0;
@@ -138,18 +222,10 @@ int MosaicMaker::BreakDown(int squareSize) {
 			r /= squareSize * squareSize;
 			g /= squareSize * squareSize;
 			b /= squareSize * squareSize;
+			c.SetColors(r, g, b);
 			//printf("xBlock %i, yBlock %i\n", xBlock, yBlock);
-			for (int yy = 0; yy < 100; yy++)
-			{
-				//printf("writing line %i\n", y);
-				for (int xx = 0; xx < 300; xx += 3)
-				{
-					//printf("writing y %i, x %i\n", yBlock + yy, xBlock + xx);	
-					newPixels[yBlock + yy][xBlock + xx] = r;
-					newPixels[yBlock + yy][xBlock + xx + 1] = g;
-					newPixels[yBlock + yy][xBlock + xx + 2] = b;
-				}
-			}
+			block.Set(c, xBlock, yBlock);
+			WriteBlock("missrev.jpg", block);
 			xBlock += 300;
 		}
 		yBlock += 100;
@@ -165,14 +241,23 @@ int MosaicMaker::BreakDown(int squareSize) {
 	jpeg_finish_compress(&cinfo);
 	fclose(out);
 	jpeg_destroy_compress(&cinfo);
-	printf("NEW IMAGE SAVED: %s\n", writeFile);
+	printf("New image saved: %s\n", writeFile);
 }
 
-void MosaicMaker::WriteBlock(char filename[], Block block) {
+void MosaicMaker::WriteBlock(string filename, Block block) {
 	// for when we actually use the images
-	ReadImage(filename);
-	
-
+	//ReadImage(filename);
+	for (int yy = 0; yy < 100; yy++)
+	{
+		//printf("writing line %i\n", y);
+		for (int xx = 0; xx < 300; xx += 3)
+		{
+			//printf("writing y %i, x %i\n", yBlock + yy, xBlock + xx);	
+			newPixels[block.Y() + yy][block.X() + xx] = block.R();
+			newPixels[block.Y() + yy][block.X() + xx + 1] = block.G();
+			newPixels[block.Y() + yy][block.X() + xx + 2] = block.B();
+		}
+	}
 }
 
 int main() {

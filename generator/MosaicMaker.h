@@ -1,5 +1,5 @@
 #ifndef IMAGEANALYZER_H 
-#define IMAGEANALYZER_H
+#define IMAGEANALYZER_HFIFO permissions
 
 #include <stdio.h>
 #include <jpeglib.h>
@@ -11,26 +11,15 @@
 #include <map>
 #include <ctype.h>
 #include <string>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include "../ImageColor.h"
 
 #define SUCCESS			0
 #define FILE_NOT_FOUND	-1
 
 using namespace std;
-
-class ImageColor {
-	int red;
-	int blue;
-	int green;
-
-public:
-	ImageColor();
-	ImageColor(int _red, int _blue, int _green);
-	void SetColors(int _red, int _blue, int _green);
-	int R() { return red; }
-	int B() { return blue; }
-	int G() { return green; }
-	void Print();
-};
 
 class Block {
 	ImageColor color;
@@ -39,19 +28,31 @@ class Block {
 public:
 	Block();
 	Block(ImageColor _color, int _x, int _y);
-	void SetBlock(ImageColor _color, int _x, int _y);
+	int R() { return color.R(); }
+	int G() { return color.G(); }
+	int B() { return color.B(); }
+	int Y() { return y; }
+	int X() { return x; }
+	void Set(ImageColor _color, int _x, int _y);
 	void Print();
-}
+};
 
 class MosaicMaker {
 	int width, height, components;
-	unsigned char **pixels, **mainPicture, **newPixels;
+	unsigned char **pixels, **mainPic, **newPixels;
 	char *readFile, writeFile[11];
+	int fd;
+	char *fifo;
 
 public:
+	int OpenPipe();
+	int WriteTags(string tags);
+	int WriteColor(ImageColor c);
+	string ReadID();
+	int ClosePipe();
 	int ReadImage(string _filename);
 	int BreakDown(int squareSize);
-	void WriteBlock(char _filename, Block block);
+	void WriteBlock(string filename, Block block);
 };
 
 #endif
