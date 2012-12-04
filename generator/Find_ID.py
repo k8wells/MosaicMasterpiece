@@ -89,7 +89,8 @@ def main():
         if color[0] is -1:
             print 'Mosaic is done'
             break
-        new_id = find_id.findID(cluster_ids, clusters, pics, color)
+        #new_id = find_id.findID(cluster_ids, clusters, pics, color)
+        new_id = '234365908'
         print new_id
         c.writeID(new_id)  
 
