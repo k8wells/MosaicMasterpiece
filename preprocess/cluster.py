@@ -18,7 +18,8 @@ import tfidf
 import numpy as np
 from numpy import unravel_index
 
-    
+def divide(id):
+    return [id[i:i+10] for i in range(len(id)) if not i % 10]
 
 class Cluster(object):
     
@@ -44,7 +45,7 @@ class Cluster(object):
             color = pic['color']
             self.pics[id] = {}
             self.pics[id]['tokens'] = tokens
-            #self.pics[id]['color'] = color
+            self.pics[id]['color'] = color
             self.clusters["tier0"][str(i)]=[id]
             self.clusters_inv['tier0'][str(id)]=i
             i = i+1
@@ -111,16 +112,22 @@ class Cluster(object):
         while i < len(matrix[0]):
             if i != x and i != y:
                 id = str(self.matrix_ids[i]) # find pic id that corresponds with certain row
-                value = str(self.clusters_inv['tier'+str(k-1)][id]) # find cluster that the pic was previously assigned to
-                self.clusters_inv['tier'+str(k)][id] = value # set pic id : same cluster id (row was not changed)
+                divide_id = divide(id)
+                value = str(self.clusters_inv['tier'+str(k-1)][divide_id[0]]) # find cluster that the pic was previously assigned to
+                for id in divide_id:
+                    self.clusters_inv['tier'+str(k)][id] = value # set pic id : same cluster id (row was not changed)
                 
                 self.clusters['tier'+str(k)][value] = self.clusters['tier'+str(k-1)][value]
             else:
-                new_id = str(id1 + id2)
-                value = str(self.clusters_inv['tier'+str(k-1)][id1]) # find cluster value that the pic was previously assigned to
-                self.clusters_inv['tier'+str(k)][new_id] = str(value) # use cluster id of first pic
+                #new_id = str(id1 + id2)
+                divide_id1 = divide(id1)
+                divide_id2 = divide(id2)
+                value = str(self.clusters_inv['tier'+str(k-1)][divide_id1[0]]) # find cluster value that the pic was previously assigned to
+                ids = divide_id1 + divide_id2
+                for id in ids:
+                    self.clusters_inv['tier'+str(k)][id] = str(value) # use cluster id of first pic
                 
-                value2 = str(self.clusters_inv['tier'+str(k-1)][str(id2)]) # find cluster that the pic was previously assigned to
+                value2 = str(self.clusters_inv['tier'+str(k-1)][divide_id2[0]]) # find cluster that the pic was previously assigned to
                 clusters1 = self.clusters['tier'+str(k-1)][value] # find all pic ids in previous cluster
                 clusters2 = self.clusters['tier'+str(k-1)][value2] # find all pic ids in previous cluster
                 combine_clusters = clusters1 + clusters2
@@ -139,6 +146,8 @@ class Cluster(object):
         return self.clusters
     def return_clusters_inv(self):
         return self.clusters_inv
+    def return_pics(self):
+        return self.pics
 
 def main():
     #pics = utils.read_tweets()
@@ -167,6 +176,9 @@ def main():
     mongo_clusters_inv = mongo['my_database']['clusters_inv']
     mongo_clusters_inv.remove({})
     mongo_clusters_inv.insert(cluster.return_clusters_inv())
+    mongo_pics = mongo['my_database']['pics']
+    mongo_pics.remove({})
+    mongo_pics.insert(cluster.return_pics())
     for item in mongo_clusters.find():
         print item
     for item in mongo_clusters_inv.find():
