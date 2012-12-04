@@ -11,25 +11,13 @@ import utils
 import json
 import itertools
 from collections import defaultdict
+import pymongo
 
 from stemming import porter2
 import tfidf
 import numpy as np
 from numpy import unravel_index
 
-
-
-def parseID(filename):
-    tokens = filename.split("_")
-    return tokens[0]
-
-def tokenize(text):
-    tokens = re.findall("[\w']+", text.lower())
-    return [porter2.stem(token) for token in tokens]
-
-
-def divide(id):
-    return [id[i:i+10] for i in range(len(id)) if not i % 10]
     
 
 class Cluster(object):
@@ -48,12 +36,17 @@ class Cluster(object):
         self.clusters_inv['tier0']={}
         i = 0
         for pic in pics:
-            id = parseID(pic["filename"])
-            tokens = tokenize(pic["tags"])
+            id = pic["filename"]
+            if pic['keywords']['keywords'] == []:
+                tokens = pic['keywords']['title']
+            else:
+                tokens = pic['keywords']['keywords']
+            color = pic['color']
             self.pics[id] = {}
             self.pics[id]['tokens'] = tokens
-            self.clusters["tier0"][i]=[id]
-            self.clusters_inv['tier0'][id]=i
+            #self.pics[id]['color'] = color
+            self.clusters["tier0"][str(i)]=[id]
+            self.clusters_inv['tier0'][str(id)]=i
             i = i+1
 
     def set_up_table(self, k):
@@ -117,34 +110,40 @@ class Cluster(object):
         i = 0
         while i < len(matrix[0]):
             if i != x and i != y:
-                id = self.matrix_ids[i] # find pic id that corresponds with certain row
-                print id
-                value = self.clusters_inv['tier'+str(k-1)][id] # find cluster that the pic was previously assigned to
+                id = str(self.matrix_ids[i]) # find pic id that corresponds with certain row
+                value = str(self.clusters_inv['tier'+str(k-1)][id]) # find cluster that the pic was previously assigned to
                 self.clusters_inv['tier'+str(k)][id] = value # set pic id : same cluster id (row was not changed)
                 
                 self.clusters['tier'+str(k)][value] = self.clusters['tier'+str(k-1)][value]
             else:
-                new_id = id1 + id2
-                value = self.clusters_inv['tier'+str(k-1)][id1] # find cluster value that the pic was previously assigned to
-                self.clusters_inv['tier'+str(k)][new_id] = value # use cluster id of first pic
+                new_id = str(id1 + id2)
+                value = str(self.clusters_inv['tier'+str(k-1)][id1]) # find cluster value that the pic was previously assigned to
+                self.clusters_inv['tier'+str(k)][new_id] = str(value) # use cluster id of first pic
                 
-                value2 = self.clusters_inv['tier'+str(k-1)][id2] # find cluster that the pic was previously assigned to
+                value2 = str(self.clusters_inv['tier'+str(k-1)][str(id2)]) # find cluster that the pic was previously assigned to
                 clusters1 = self.clusters['tier'+str(k-1)][value] # find all pic ids in previous cluster
                 clusters2 = self.clusters['tier'+str(k-1)][value2] # find all pic ids in previous cluster
                 combine_clusters = clusters1 + clusters2
                 self.clusters['tier'+str(k)][value] = combine_clusters
             i = i + 1
-        print 'CLUSTERS'
-        print self.clusters
-        print 'INV_CLUSTER'
-        print self.clusters_inv
+        #print 'CLUSTERS'
+        #print self.clusters
+        #print 'INV_CLUSTER'
+        #print self.clusters_inv
 
     def find_beginning_size(self):
         size =  len(self.pics)
         return size
 
+    def return_clusters(self):
+        return self.clusters
+    def return_clusters_inv(self):
+        return self.clusters_inv
+
 def main():
-    pics = utils.read_tweets()
+    #pics = utils.read_tweets()
+    mongo = pymongo.Connection('localhost', 27017)
+    pics = mongo['my_database']['merged_info'].find()
     cluster = Cluster()
     cluster.index(pics)
     size = cluster.find_beginning_size()
@@ -161,6 +160,17 @@ def main():
         pairs = cluster.find_closest_pairs(matrix)
         new_matrix = cluster.combine_pairs(matrix, pairs, i)
         i = i +1
+    mongo_clusters = mongo['my_database']['clusters']
+    #print cluster.return_clusters()
+    mongo_clusters.remove({})
+    mongo_clusters.insert(cluster.return_clusters())
+    mongo_clusters_inv = mongo['my_database']['clusters_inv']
+    mongo_clusters_inv.remove({})
+    mongo_clusters_inv.insert(cluster.return_clusters_inv())
+    for item in mongo_clusters.find():
+        print item
+    for item in mongo_clusters_inv.find():
+        print item
     
 
 
