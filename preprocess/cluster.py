@@ -179,6 +179,7 @@ def main():
     mongo_pics = mongo['my_database']['pics']
     mongo_pics.remove({})
     mongo_pics.insert(cluster.return_pics())
+    print cluster.return_pics()
     for item in mongo_clusters.find():
         print item
     for item in mongo_clusters_inv.find():
