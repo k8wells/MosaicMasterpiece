@@ -75,7 +75,7 @@ int MosaicMaker::WriteColor(ImageColor c) {
 	int bytes = 0;
 	char colorBuf[11];
 	sprintf(colorBuf, "%03i,%03i,%03i", c.R(), c.G(), c.B());
-	printf("Sending %s\n", colorBuf);
+	//printf("Sending %s\n", colorBuf);
 	if ((bytes = write(fdw, colorBuf, 11 * sizeof(char))) < 0)
 	{
 		perror("ERROR WRITING COLOR");

@@ -70,9 +70,6 @@ protected:
 	
 	void OnRun();
 	void OnClose();
-	void LowRes();
-	void MedRes();
-	void HighRes();
 	
 	MosaicMaker mm;
 	
