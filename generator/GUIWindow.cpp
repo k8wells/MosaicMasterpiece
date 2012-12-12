@@ -13,6 +13,8 @@ GUIWindow::GUIWindow() : bigbox(Gtk::ORIENTATION_VERTICAL, 15),
 	add(bigbox);
 	filename.set_max_length(300);
 	filename.set_text("Pick an image...");
+	tags.set_text("Tags...");
+	tags.set_max_length(300);
 	browse.set_label("Browse...");
 	close.set_label("Close");
 	run.set_label("RUN!");
@@ -34,17 +36,19 @@ GUIWindow::GUIWindow() : bigbox(Gtk::ORIENTATION_VERTICAL, 15),
 	
 	status.set_label("Waiting for a picture...");
 	
-	filebox.pack_start(filename);
-	filebox.pack_start(run);
+	//filebox.pack_start(filename);
+	//filebox.pack_start(run);
 	
 	sizebox.pack_start(low);
 	sizebox.pack_start(med);
 	sizebox.pack_start(high);
 	
 	bigbox.pack_start(status);
-	bigbox.pack_start(filebox);
-	bigbox.pack_start(sizebox);
+	bigbox.pack_start(filename);
 	bigbox.pack_start(browse);
+	bigbox.pack_start(sizebox);
+	bigbox.pack_start(tags);
+	bigbox.pack_start(run);
 	bigbox.pack_start(close);
 	show_all_children();
 	
@@ -53,11 +57,13 @@ GUIWindow::GUIWindow() : bigbox(Gtk::ORIENTATION_VERTICAL, 15),
 
 void GUIWindow::OnRun() {
 	string file = (string) filename.get_text();
+	string tagStr = (string) tags.get_text();
 	status.set_label(file);
-	//mm.OpenPipe();
-	mm.WriteTags("hello tags are here yes thank you");
+	if (tagStr.compare("Tags..."))
+		mm.WriteTags("");
+	else	
+		mm.WriteTags(tagStr);
 	mm.BreakDown(file, resLevel);
-	//mm.ClosePipe();
 }
 
 void GUIWindow::OnClose() {
