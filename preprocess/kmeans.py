@@ -13,6 +13,7 @@ import itertools
 from collections import defaultdict
 import pymongo
 from numpy import array
+import gc
 #from sklearn.feature_extraction.text import TfidfTransformer
 
 from stemming import porter2
@@ -75,23 +76,6 @@ class Clustering(object):
             x = x + 1
         return matrix
 
-    def find_matrix2(self, table, ids):
-        sims = []
-        for id in ids:
-            sims = sims + table.similarities(self.dict[id])
-        values = []
-        for sim in sims:
-            values.append(sim[1])
-        matrix = np.array(values)
-        size = math.sqrt(len(sims))
-        matrix.resize(size, size)
-        #ignores the similarites to itself
-        x = 0
-        while x < size:
-            y = matrix[x].argmax()
-            matrix[x,y] = 0
-            x = x + 1
-        return matrix
     
     def set_up_table(self, tokens):
         table = tfidf.tfidf()
@@ -117,17 +101,20 @@ class Clustering(object):
     #for cluster in clusters:
     def return_pics(self):
         return self.pics
+
+    def removepics(self):
+        self.pics = {}
             
             
 
 def main():
+    gc.enable()
     mongo = pymongo.Connection('localhost', 27017)
     pics = mongo['my_database']['merged_info'].find()
-    mongo_pics = mongo['my_database']['pics']
-    mongo_pics.remove({})
     #mongo_pics.insert(cluster.return_pics())
     cluster = Clustering()
     array1 = cluster.index(pics)
+    cluster.removepics()
     mongo_clusters = mongo['my_database']['clusters']
     mongo_clusters.remove({})
     mongo_clusters_inv = mongo['my_database']['clusters_inv']
@@ -137,14 +124,17 @@ def main():
     matrix = cluster.find_matrix(table)
     centroids,_ = kmeans(matrix,1000)
     clusters,_ = vq(matrix, centroids)
+    del centroids
     print clusters
     clusters_dict, cluster_inv = cluster.assign_clusters(clusters)
+    del clusters
 
     #print clusters_dict
     #print cluster_inv
     
     mongo_clusters.insert(clusters_dict)
     mongo_clusters_inv.insert(cluster_inv)
+    gc.disable()
     #print CLUSTERS_INV
     """
     cluster = CLUSTERS['tier7']['521450759']
