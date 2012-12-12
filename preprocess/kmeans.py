@@ -103,43 +103,44 @@ class Clustering(object):
     def assign_clusters(self, clusters):
         clusters_dict = {}
         cluster_dict_inv = {}
-        cluster_dict_inv[0] = []
-        cluster_dict_inv[1] = []
-        cluster_dict_inv[2] = []
-        cluster_dict_inv[3] = []
-        cluster_dict_inv[4] = []
-        cluster_dict_inv[5] = []
-        cluster_dict_inv[6] = []
-        cluster_dict_inv[7] = []
-        cluster_dict_inv[8] = []
-        cluster_dict_inv[9] = []
+        cluster_dict_inv['0'] = []
+        cluster_dict_inv['1'] = []
+        cluster_dict_inv['2'] = []
+        cluster_dict_inv['3'] = []
+        cluster_dict_inv['4'] = []
+        cluster_dict_inv['5'] = []
+        cluster_dict_inv['6'] = []
+        cluster_dict_inv['7'] = []
+        cluster_dict_inv['8'] = []
+        cluster_dict_inv['9'] = []
         i = 0
         for cluster in clusters:
             id = self.ids[i]
-            clusters_dict[id] = cluster
-            cluster_dict_inv[cluster].append(id)
+            clusters_dict[id] = str(cluster)
+            cluster_dict_inv[str(cluster)].append(id)
             i = i+1
         return clusters_dict, cluster_dict_inv
 
     def assign_clusters2(self, clusters, starting_value, ids):
+        starting_value = int(starting_value)
         clusters_dict = {}
         cluster_dict_inv = {}
-        cluster_dict_inv[starting_value] = []
-        cluster_dict_inv[starting_value+ 1] = []
-        cluster_dict_inv[starting_value+2] = []
-        cluster_dict_inv[starting_value+3] = []
-        cluster_dict_inv[starting_value+4] = []
-        cluster_dict_inv[starting_value+5] = []
-        cluster_dict_inv[starting_value+6] = []
-        cluster_dict_inv[starting_value+7] = []
-        cluster_dict_inv[starting_value+8] = []
-        cluster_dict_inv[starting_value+9] = []
+        cluster_dict_inv[str(starting_value)] = []
+        cluster_dict_inv[str(starting_value+ 1)] = []
+        cluster_dict_inv[str(starting_value+2)] = []
+        cluster_dict_inv[str(starting_value+3)] = []
+        cluster_dict_inv[str(starting_value+4)] = []
+        cluster_dict_inv[str(starting_value+5)] = []
+        cluster_dict_inv[str(starting_value+6)] = []
+        cluster_dict_inv[str(starting_value+7)] = []
+        cluster_dict_inv[str(starting_value+8)] = []
+        cluster_dict_inv[str(starting_value+9)] = []
         i = starting_value
         k = 0
         for cluster in clusters:
             id = ids[k]
-            clusters_dict[id] = cluster + starting_value
-            cluster_dict_inv[cluster+starting_value].append(id)
+            clusters_dict[id] = str(cluster + starting_value)
+            cluster_dict_inv[str(cluster+starting_value)].append(id)
             #i = i+1
             k = k+1
         return clusters_dict, cluster_dict_inv
@@ -171,7 +172,7 @@ def main():
     #print clusters
     #print 'hi'
     #print centroids
-    starting_value = 0
+    starting_value = '0'
     clusters_dict1, cluster_inv1 = cluster.assign_clusters(clusters)
     CLUSTERS = {}
     CLUSTERS_INV = {}
@@ -189,10 +190,10 @@ def main():
         i = 0
         print cluster_inv1
         #print math.pow(10,j)-j*10
-        while i < max(cluster_inv1.keys())+1:
+        while i < int(max(cluster_inv1.keys()))+1:
             #print i
             
-            ids = cluster_inv1[i]
+            ids = cluster_inv1[str(i)]
             #print len(ids)
             if len(ids) > 1:
                 table = cluster.set_up_table2(ids)
@@ -206,7 +207,7 @@ def main():
                 if 'tier'+str(k) in CLUSTERS.keys():
                     #print 'starting value'
                     #print max(CLUSTERS_INV['tier'+str(k+1)].keys()) + 1
-                    starting_value = max(CLUSTERS_INV['tier'+str(k)].keys()) + 1
+                    starting_value = str(int(max(CLUSTERS_INV['tier'+str(k)].keys())) + 1)
                     clusters_dict, cluster_inv = cluster.assign_clusters2(clusters,starting_value, ids)
                     CLUSTERS['tier' + str(k) ].update(clusters_dict)
                     CLUSTERS_INV['tier' + str(k) ].update(cluster_inv)
@@ -215,26 +216,26 @@ def main():
                 else:
                     #print 'ONCE'
                     #print clusters
-                    starting_value = 0
+                    starting_value = '0'
                     clusters_dict, cluster_inv = cluster.assign_clusters2(clusters,starting_value, ids)
                     CLUSTERS['tier' + str(k) ] = clusters_dict
                     CLUSTERS_INV['tier' + str(k) ] = cluster_inv
             elif len(ids) == 1:
                 if 'tier'+str(k) in CLUSTERS.keys():
-                    starting_value = max(CLUSTERS_INV['tier'+str(k)].keys()) + 1
+                    starting_value = str(int(max(CLUSTERS_INV['tier'+str(k)].keys())) + 1)
                     clusters_dict = {ids[0]:starting_value}
                     cluster_inv = {starting_value:[ids[0]]}
                     CLUSTERS['tier' + str(k) ].update(clusters_dict)
                     CLUSTERS_INV['tier' + str(k) ].update(cluster_inv)
                 else:
-                    starting_value = 0
+                    starting_value = '0'
                     clusters_dict = {ids[0]:starting_value}
                     cluster_inv = {starting_value:[ids[0]]}
                     CLUSTERS['tier' + str(k) ] = clusters_dict
                     CLUSTERS_INV['tier' + str(k) ] = cluster_inv
             else:
                 if 'tier'+str(k) in CLUSTERS.keys():
-                    starting_value = max(CLUSTERS_INV['tier'+str(k)].keys()) + 1
+                    starting_value = str(int(max(CLUSTERS_INV['tier'+str(k)].keys())) + 1)
                     #clusters_dict = {ids[0]:starting_value}
                     cluster_inv = {starting_value:[]}
                     #CLUSTERS['tier' + str(k) ].update(clusters_dict)
@@ -242,14 +243,14 @@ def main():
                 else:
                     starting_value = 0
                     #clusters_dict = {ids[0]:starting_value}
-                    cluster_inv = {starting_value:[]}
+                    cluster_inv = {str(starting_value):[]}
                     #CLUSTERS['tier' + str(k) ] = clusters_dict
                     CLUSTERS_INV['tier' + str(k) ] = cluster_inv
                 
 
             i = i+1
-        #mongo_clusters.insert({'tier' + str(k) : CLUSTERS})
-        #mongo_clusters_inv.insert({'tier' + str(k) : CLUSTERS_INV})
+        mongo_clusters.insert({'tier' + str(k) : CLUSTERS})
+        mongo_clusters_inv.insert({'tier' + str(k) : CLUSTERS_INV})
         cluster_inv1 = CLUSTERS_INV['tier' + str(k) ]
         k = k-1
         j = j+1
