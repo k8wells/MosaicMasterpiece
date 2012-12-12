@@ -115,6 +115,7 @@ def main():
     cluster = Clustering()
     array1 = cluster.index(pics)
     cluster.removepics()
+    gc.collect()
     mongo_clusters = mongo['my_database']['clusters']
     mongo_clusters.remove({})
     mongo_clusters_inv = mongo['my_database']['clusters_inv']
@@ -123,11 +124,15 @@ def main():
     table = cluster.set_up_table(array1)
     matrix = cluster.find_matrix(table)
     centroids,_ = kmeans(matrix,1000)
+    gc.collect()
     clusters,_ = vq(matrix, centroids)
+    del matrix
     del centroids
+    gc.collect()
     print clusters
     clusters_dict, cluster_inv = cluster.assign_clusters(clusters)
     del clusters
+    gc.collect()
 
     #print clusters_dict
     #print cluster_inv
