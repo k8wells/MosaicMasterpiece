@@ -44,9 +44,6 @@ class Clustering(object):
 
     def find_matrix(self, table):
         sims = []
-        #id = 0
-        #self.matrix_ids={}
-        #self.matrix_ids_inv = {}
         for pic in self.dict.keys():
             sims = sims + table.similarities(self.dict[pic])
         values = []
@@ -71,26 +68,54 @@ class Clustering(object):
             i = i+1
         return table
 
+    def assign_clusters(self, clusters):
+        clusters_dict = {}
+        cluster_dict_inv = {}
+        cluster_dict_inv[0] = []
+        cluster_dict_inv[1] = []
+        cluster_dict_inv[2] = []
+        cluster_dict_inv[3] = []
+        cluster_dict_inv[4] = []
+        cluster_dict_inv[5] = []
+        cluster_dict_inv[6] = []
+        cluster_dict_inv[7] = []
+        cluster_dict_inv[8] = []
+        cluster_dict_inv[9] = []
+        i = 0
+        for cluster in clusters:
+            id = self.ids[i]
+            clusters_dict[id] = cluster
+            cluster_dict_inv[cluster].append(id)
+            i = i+1
+        return clusters_dict, cluster_dict_inv
+
+    #def assign_clusters_inv(self, clusters):
+        
+    #for cluster in clusters:
+            
+            
+
 def main():
     mongo = pymongo.Connection('localhost', 27017)
     pics = mongo['my_database']['merged_info'].find()
     cluster = Clustering()
     array1 = cluster.index(pics)
-    print array1
-        
-    """
-    tfidf = transformer.fit_transform(array1)
-    array_final = tfidf.toarray()
-    """
-    i = 1
+    #print array1
     table = cluster.set_up_table(array1)
     matrix = cluster.find_matrix(table)
-    print matrix
+    #print matrix
     centroids,_ = kmeans(matrix,6)
     clusters,_ = vq(matrix, centroids)
-    print clusters
-    print 'hi'
-    print centroids
+    #print clusters
+    #print 'hi'
+    #print centroids
+    clusters_dict, cluster_inv = cluster.assign_clusters(clusters)
+    print clusters_dict
+    print cluster_inv
+
+    ##SECOND ROUND
+
+    
     
 
 
