@@ -30,6 +30,11 @@ class Clustering(object):
         self.pics = {}
         
     def index(self, pics):
+        mongo = pymongo.Connection('localhost', 27017)
+        pics = mongo['my_database']['merged_info'].find()
+        mongo_pics = mongo['my_database']['pics']
+        mongo_pics.remove({})
+
         array1 = []
         count = 0
         for pic in pics:
@@ -47,6 +52,7 @@ class Clustering(object):
             self.pics[id]['tokens'] = tokens
             self.pics[id]['color'] = color
             self.dict[id]=tokens
+            mongo_pics.insert({id: self.pics[id]})
             array1.append(tokens)
         print count
         return array1
@@ -117,15 +123,16 @@ class Clustering(object):
 def main():
     mongo = pymongo.Connection('localhost', 27017)
     pics = mongo['my_database']['merged_info'].find()
+    mongo_pics = mongo['my_database']['pics']
+    mongo_pics.remove({})
+    #mongo_pics.insert(cluster.return_pics())
     cluster = Clustering()
     array1 = cluster.index(pics)
     mongo_clusters = mongo['my_database']['clusters']
     mongo_clusters.remove({})
     mongo_clusters_inv = mongo['my_database']['clusters_inv']
     mongo_clusters_inv.remove({})
-    mongo_pics = mongo['my_database']['pics']
-    mongo_pics.remove({})
-    mongo_pics.insert(cluster.return_pics())
+
     table = cluster.set_up_table(array1)
     matrix = cluster.find_matrix(table)
     centroids,_ = kmeans(matrix,1000)
@@ -133,8 +140,8 @@ def main():
     print clusters
     clusters_dict, cluster_inv = cluster.assign_clusters(clusters)
 
-    print clusters_dict
-    print cluster_inv
+    #print clusters_dict
+    #print cluster_inv
     
     mongo_clusters.insert(clusters_dict)
     mongo_clusters_inv.insert(cluster_inv)

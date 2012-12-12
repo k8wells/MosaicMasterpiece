@@ -81,7 +81,6 @@ def main():
     color = [102, 9, 39]
     tag = 'cat'
     id = get_id(tag, merge)
-    #print id
     cluster_id = find_id.find_clusters(id, clusters)
     new_id = find_id.findID(cluster_id, clusters_inv, pics, color)
     print new_id
