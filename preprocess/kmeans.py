@@ -89,6 +89,7 @@ class Clustering(object):
 
     def set_up_table2(self, ids):
         table = tfidf.tfidf()
+       # print ids
         for id in ids:
             token = self.dict[id]
             table.addDocument(id,token)
@@ -132,9 +133,9 @@ class Clustering(object):
         k = 0
         for cluster in clusters:
             id = ids[k]
-            clusters_dict[id] = i
-            cluster_dict_inv[i].append(id)
-            i = i+1
+            clusters_dict[id] = cluster + starting_value
+            cluster_dict_inv[cluster+starting_value].append(id)
+            #i = i+1
             k = k+1
         return clusters_dict, cluster_dict_inv
 
@@ -157,43 +158,82 @@ def main():
     #print 'hi'
     #print centroids
     starting_value = 0
-    clusters_dict, cluster_inv = cluster.assign_clusters(clusters)
+    clusters_dict1, cluster_inv1 = cluster.assign_clusters(clusters)
     CLUSTERS = {}
     CLUSTERS_INV = {}
-    CLUSTERS['tier9'] = clusters_dict
-    CLUSTERS_INV['tier9'] = cluster_inv
+    CLUSTERS['tier9'] = clusters_dict1
+    CLUSTERS_INV['tier9'] = cluster_inv1
     #print clusters_dict
    # print cluster_inv
 
     ##SECOND ROUND
-    i = 0
+    
     k = 8
-    while i < 10:
-        #print cluster_inv
-        ids = cluster_inv[i]
-        #print ids
-        if len(ids) > 1:
-            table = cluster.set_up_table2(ids)
-            matrix = cluster.find_matrix2(table, ids)
-            #print matrix
-            centroids,_ = kmeans(matrix,10)
-            #print centroids
-            clusters,_ = vq(matrix, centroids)
-            #print clusters
+    while k > -1:
+        #print k
+        i = 0
+        print cluster_inv1
+        while i < 10:
+            #print i
             
-            if 'tier'+str(k) in CLUSTERS.keys():
-                starting_value = max(CLUSTERS.values()) + 1
-                clusters_dict, cluster_inv = cluster.assign_clusters2(clusters,starting_value, ids)
-                CLUSTERS['tier' + str(k) ].update(clusters_dict)
-                CLUSTERS_INV['tier' + str(k) ].update(cluster_inv)
+            ids = cluster_inv1[i]
+            #print len(ids)
+            if len(ids) > 1:
+                table = cluster.set_up_table2(ids)
+                matrix = cluster.find_matrix2(table, ids)
+                #print matrix
+                centroids,_ = kmeans(matrix,10)
+                #print centroids
+                clusters,_ = vq(matrix, centroids)
+                #print clusters
                 
+                if 'tier'+str(k) in CLUSTERS.keys():
+                    #print 'starting value'
+                    #print max(CLUSTERS_INV['tier'+str(k+1)].keys()) + 1
+                    starting_value = max(CLUSTERS_INV['tier'+str(k)].keys()) + 1
+                    clusters_dict, cluster_inv = cluster.assign_clusters2(clusters,starting_value, ids)
+                    CLUSTERS['tier' + str(k) ].update(clusters_dict)
+                    CLUSTERS_INV['tier' + str(k) ].update(cluster_inv)
+                    #print cluster_inv
+                    
+                else:
+                    #print 'ONCE'
+                    #print clusters
+                    starting_value = 0
+                    clusters_dict, cluster_inv = cluster.assign_clusters2(clusters,starting_value, ids)
+                    CLUSTERS['tier' + str(k) ] = clusters_dict
+                    CLUSTERS_INV['tier' + str(k) ] = cluster_inv
+            elif len(ids) == 1:
+                if 'tier'+str(k) in CLUSTERS.keys():
+                    starting_value = max(CLUSTERS_INV['tier'+str(k)].keys()) + 1
+                    clusters_dict = {ids[0]:starting_value}
+                    cluster_inv = {starting_value:[ids[0]]}
+                    CLUSTERS['tier' + str(k) ].update(clusters_dict)
+                    CLUSTERS_INV['tier' + str(k) ].update(cluster_inv)
+                else:
+                    starting_value = 0
+                    clusters_dict = {ids[0]:starting_value}
+                    cluster_inv = {starting_value:[ids[0]]}
+                    CLUSTERS['tier' + str(k) ] = clusters_dict
+                    CLUSTERS_INV['tier' + str(k) ] = cluster_inv
             else:
-                starting_value = 0
-                clusters_dict, cluster_inv = cluster.assign_clusters2(clusters,starting_value, ids)
-                CLUSTERS['tier' + str(k) ] = clusters_dict
-                CLUSTERS_INV['tier' + str(k) ] = cluster_inv
+                if 'tier'+str(k) in CLUSTERS.keys():
+                    starting_value = max(CLUSTERS_INV['tier'+str(k)].keys()) + 1
+                    #clusters_dict = {ids[0]:starting_value}
+                    cluster_inv = {starting_value:[]}
+                    #CLUSTERS['tier' + str(k) ].update(clusters_dict)
+                    CLUSTERS_INV['tier' + str(k) ].update(cluster_inv)
+                else:
+                    starting_value = 0
+                    #clusters_dict = {ids[0]:starting_value}
+                    cluster_inv = {starting_value:[]}
+                    #CLUSTERS['tier' + str(k) ] = clusters_dict
+                    CLUSTERS_INV['tier' + str(k) ] = cluster_inv
+                
 
-        i = i+1
+            i = i+1
+        cluster_inv1 = CLUSTERS_INV['tier' + str(k) ]
+        k = k-1
     print CLUSTERS_INV
         
     
