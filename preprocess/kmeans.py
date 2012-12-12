@@ -123,7 +123,7 @@ def main():
 
     table = cluster.set_up_table(array1)
     matrix = cluster.find_matrix(table)
-    centroids,_ = kmeans(matrix,1000)
+    centroids,_ = kmeans(matrix,100)
     gc.collect()
     clusters,_ = vq(matrix, centroids)
     del matrix
