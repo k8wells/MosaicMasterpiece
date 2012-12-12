@@ -27,6 +27,7 @@ class Clustering(object):
     def __init__(self):
         self.ids = []
         self.dict = {}
+        self.pics = {}
         
     def index(self, pics):
         array1 = []
@@ -39,6 +40,10 @@ class Clustering(object):
                 tokens = pic['keywords']['title']
             else:
                 tokens = pic['keywords']['keywords']
+            color = pic['color']
+            self.pics[id] = {}
+            self.pics[id]['tokens'] = tokens
+            self.pics[id]['color'] = color
             self.dict[id]=tokens
             array1.append(tokens)
         return array1
@@ -142,6 +147,8 @@ class Clustering(object):
     #def assign_clusters_inv(self, clusters):
         
     #for cluster in clusters:
+    def return_pics(self):
+        return self.pics
             
             
 
@@ -150,6 +157,13 @@ def main():
     pics = mongo['my_database']['merged_info'].find()
     cluster = Clustering()
     array1 = cluster.index(pics)
+    mongo_clusters = mongo['my_database']['clusters']
+    mongo_clusters.remove({})
+    mongo_clusters_inv = mongo['my_database']['clusters_inv']
+    mongo_clusters_inv.remove({})
+    mongo_pics = mongo['my_database']['pics']
+    mongo_pics.remove({})
+    mongo_pics.insert(cluster.return_pics())
     table = cluster.set_up_table(array1)
     matrix = cluster.find_matrix(table)
     centroids,_ = kmeans(matrix,10)
@@ -169,11 +183,13 @@ def main():
     ##SECOND ROUND
     
     k = 8
+    j = 1
     while k > -1:
         #print k
         i = 0
         print cluster_inv1
-        while i < 10:
+        #print math.pow(10,j)-j*10
+        while i < max(cluster_inv1.keys())+1:
             #print i
             
             ids = cluster_inv1[i]
@@ -232,9 +248,22 @@ def main():
                 
 
             i = i+1
+        #mongo_clusters.insert({'tier' + str(k) : CLUSTERS})
+        #mongo_clusters_inv.insert({'tier' + str(k) : CLUSTERS_INV})
         cluster_inv1 = CLUSTERS_INV['tier' + str(k) ]
         k = k-1
-    print CLUSTERS_INV
+        j = j+1
+    #print CLUSTERS_INV
+    """
+    cluster = CLUSTERS['tier7']['521450759']
+    ids = CLUSTERS_INV['tier7'][cluster]
+    print ids
+    cluster = CLUSTERS['tier4']['521450759']
+    ids = CLUSTERS_INV['tier4'][cluster]
+    print ids
+    """
+    
+    
         
     
     
